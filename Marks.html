@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ವಿದ್ಯಾರ್ಥಿಗಳ ಅಂಕಗಳ ಪಟ್ಟಿ - SA-1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans Kannada', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .toolbar {
+            width: 100%;
+            max-width: 950px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+
+        .btn-print { background-color: #0f4c81; color: #ffffff; }
+        .btn-add-row { background-color: #16a34a; color: #ffffff; }
+        .btn-del-row { background-color: #dc2626; color: #ffffff; }
+        .btn-add-col { background-color: #0284c7; color: #ffffff; }
+        .btn-del-col { background-color: #ea580c; color: #ffffff; }
+
+        .sheet-container {
+            width: 100%;
+            max-width: 950px;
+            background: #ffffff;
+            border: 2px solid #1e293b;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .header-area {
+            text-align: center;
+            border-bottom: 2px solid #0f4c81;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .header-area input {
+            width: 100%;
+            border: none;
+            outline: none;
+            text-align: center;
+            background: transparent;
+            font-weight: 700;
+        }
+
+        .school-name {
+            font-size: 18px;
+            color: #0f4c81;
+            margin-bottom: 4px;
+        }
+
+        .exam-title {
+            font-size: 15px;
+            color: #334155;
+            margin-bottom: 8px;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 8px;
+            padding: 0 10px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .meta-item input {
+            border: 1px dashed #cbd5e1;
+            padding: 3px 6px;
+            font-size: 13px;
+            border-radius: 3px;
+            outline: none;
+            background: #f8fafc;
+            margin-left: 6px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .marks-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .marks-table th, .marks-table td {
+            border: 1px solid #64748b;
+            padding: 5px 3px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .marks-table th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .th-input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-weight: 700;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .name-cell input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 11.5px;
+            font-weight: 500;
+            padding-left: 4px;
+            text-align: left;
+        }
+
+        .num-input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .total-cell, .conv-cell, .grade-cell {
+            background-color: #f8fafc;
+            font-weight: bold;
+        }
+
+        .total-cell { color: #0f4c81; }
+        .conv-cell { color: #047857; }
+        .grade-cell { color: #b91c1c; }
+
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding: 0 30px;
+        }
+
+        .sig-block {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            border-top: 1px solid #475569;
+            padding-top: 5px;
+            width: 180px;
+        }
+
+        .credit-line {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 6px;
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 6mm;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .toolbar, .credit-line {
+                display: none !important;
+            }
+
+            .sheet-container {
+                border: 1.5px solid #000;
+                box-shadow: none;
+                width: 100%;
+                max-width: 100%;
+                padding: 10px;
+            }
+
+            .marks-table th {
+                background-color: #e2e8f0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .total-cell, .conv-cell, .grade-cell {
+                background-color: #f8fafc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <div class="btn-group">
+            <button class="btn btn-add-row" onclick="addRow()">+ ಸಾಲು (Row)</button>
+            <button class="btn btn-del-row" onclick="deleteRow()">- ಸಾಲು (Row)</button>
+            <button class="btn btn-add-col" onclick="addColumn()">+ ಕಾಲಂ (Column)</button>
+            <button class="btn btn-del-col" onclick="deleteColumn()">- ಕಾಲಂ (Column)</button>
+        </div>
+        <button class="btn btn-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    </div>
+
+    <div class="sheet-container">
+        
+        <div class="header-area">
+            <input type="text" class="school-name" value="ಸರ್ಕಾರಿ ಹಿರಿಯ ಪ್ರಾಥಮಿಕ ಶಾಲೆ ಆವರಗೆರೆ">
+            <input type="text" class="exam-title" value="ವಿದ್ಯಾರ್ಥಿಗಳ ಅಂಕಗಳ ಪಟ್ಟಿ - SA -1">
+            
+            <div class="meta-row">
+                <div class="meta-item">
+                    ತರಗತಿ: <input type="text" value="ತರಗತಿ..." style="width: 90px;">
+                </div>
+                <div class="meta-item">
+                    ವಿಷಯ: <input type="text" placeholder="ವಿಷಯ ಬರೆಯಿರಿ..." style="width: 140px;">
+                </div>
+                <div class="meta-item">
+                    ದಿನಾಂಕ: <input type="text" value="29/09/2026" style="width: 110px;">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="marks-table" id="marksTable">
+                <thead>
+                    <tr id="headerRow">
+                        <th style="width: 5%;">ಕ್ರಮ ಸಂಖ್ಯೆ</th>
+                        <th style="width: 33%;">ವಿದ್ಯಾರ್ಥಿಗಳ ಹೆಸರು</th>
+                        <th style="width: 12%;">ಮೌಖಿಕ ಪರೀಕ್ಷೆ (10)</th>
+                        <th style="width: 12%;">ಲಿಖಿತ ಪರೀಕ್ಷೆ (40)</th>
+                        <th style="width: 12%;">ಒಟ್ಟು (50)</th>
+                        <th style="width: 13%;">30 ಕ್ಕೆ ಪರಿವರ್ತನೆ</th>
+                        <th style="width: 13%;">Grade</th>
+                    </tr>
+                </thead>
+                <tbody id="studentBody"></tbody>
+            </table>
+        </div>
+
+        <div class="signatures">
+            <div class="sig-block">ವಿಷಯ ಶಿಕ್ಷಕರ ಸಹಿ</div>
+            <div class="sig-block">ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಹಿ</div>
+        </div>
+
+        <div class="credit-line">
+            ರಚನೆ: ನಾಗರಾಜ್ ಹೆಚ್ GPT ಆವರಗೆರೆ
+        </div>
+
+    </div>
+
+    <script>
+        const studentNames = [
+            "A DORE", "ABHISHEK H", "ABHISHEKA K", "AKASH S", "BHAVANA T",
+            "BINDHU S", "DHANUSH KUMAR GONEPPANAVAR", "DHRUVA N", "GAJENDRA S",
+            "HARSHITA", "JOGINA SUDEEPA", "K SINDHU", "KARTHIKA H", "KUSHI P",
+            "MAYTHRA B K", "NAGAMMA M", "NAYANA V", "NEETU N", "NIVEDITHA U",
+            "P VITTHALA", "PRATHAM KRISHNA G A", "PREETHAM C H", "PREETHAM P R",
+            "RAHUL K", "RAKSHITA", "SAMARTH N P", "SAMARTHA M", "SATHISH NAIK",
+            "SHAYAN M", "SHIVARAM NAIK M", "ULLAS M N", "UMAPATHI", "USHA DEVI R",
+            "VITAL T", "YASHODA C", "YOGESH P A"
+        ];
+
+        let extraColsCount = 0;
+        const tbody = document.getElementById("studentBody");
+
+        studentNames.forEach((name, index) => {
+            appendRow(index + 1, name);
+        });
+
+        function appendRow(slNo, name = "") {
+            const tr = document.createElement("tr");
+            
+            let extraTds = "";
+            for (let i = 0; i < extraColsCount; i++) {
+                extraTds += `<td><input type="text" class="num-input"></td>`;
+            }
+
+            tr.innerHTML = `
+                <td class="sl-no">${slNo}</td>
+                <td class="name-cell"><input type="text" value="${name}" placeholder="ಹೆಸರು ಬರೆಯಿರಿ..."></td>
+                <td><input type="number" min="0" max="10" class="num-input oral-input" oninput="calcMarks(this)"></td>
+                <td><input type="number" min="0" max="40" class="num-input written-input" oninput="calcMarks(this)"></td>
+                <td class="total-cell">0</td>
+                <td class="conv-cell">0</td>
+                <td class="grade-cell">-</td>
+                ${extraTds}
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function calcMarks(element) {
+            const row = element.closest('tr');
+            const oral = parseFloat(row.querySelector('.oral-input').value) || 0;
+            const written = parseFloat(row.querySelector('.written-input').value) || 0;
+
+            const total = oral + written;
+            row.querySelector('.total-cell').textContent = total;
+
+            const conv30 = ((total / 50) * 30);
+            row.querySelector('.conv-cell').textContent = conv30.toFixed(1);
+
+            const percentage = (total / 50) * 100;
+            let grade = "-";
+
+            if (total > 0 || percentage > 0) {
+                if (percentage >= 90) {
+                    grade = "A+";
+                } else if (percentage >= 70) {
+                    grade = "A";
+                } else if (percentage >= 50) {
+                    grade = "B+";
+                } else if (percentage >= 30) {
+                    grade = "B";
+                } else {
+                    grade = "C";
+                }
+            }
+
+            row.querySelector('.grade-cell').textContent = grade;
+        }
+
+        function addRow() {
+            const count = tbody.rows.length + 1;
+            appendRow(count, "");
+        }
+
+        function deleteRow() {
+            if (tbody.rows.length > 1) {
+                tbody.deleteRow(tbody.rows.length - 1);
+            } else {
+                alert("ಕನಿಷ್ಠ ಒಂದು ಸಾಲು ಇರಲೇಬೇಕು!");
+            }
+        }
+
+        function addColumn() {
+            extraColsCount++;
+            const headerRow = document.getElementById("headerRow");
+            const th = document.createElement("th");
+            th.className = "extra-col-header";
+            th.innerHTML = `<input type="text" class="th-input" value="ವಿವರ ${extraColsCount}">`;
+            headerRow.appendChild(th);
+
+            Array.from(tbody.rows).forEach(row => {
+                const td = document.createElement("td");
+                td.className = "extra-col-cell";
+                td.innerHTML = `<input type="text" class="num-input">`;
+                row.appendChild(td);
+            });
+        }
+
+        function deleteColumn() {
+            if (extraColsCount > 0) {
+                const headerRow = document.getElementById("headerRow");
+                headerRow.deleteCell(headerRow.cells.length - 1);
+
+                Array.from(tbody.rows).forEach(row => {
+                    row.deleteCell(row.cells.length - 1);
+                });
+                extraColsCount--;
+            } else {
+                alert("ಮುಖ್ಯ ಲೆಕ್ಕಾಚಾರದ ಕಾಲಂಗಳನ್ನು ತೆಗೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ!");
+            }
+        }
+    </script>
+</body>
+</html>
