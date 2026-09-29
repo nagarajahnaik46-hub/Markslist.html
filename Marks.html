@@ -37,14 +37,14 @@
 
         .btn-group {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
         .btn {
             border: none;
-            padding: 8px 14px;
-            font-size: 13px;
+            padding: 7px 12px;
+            font-size: 12px;
             font-weight: 600;
             border-radius: 4px;
             cursor: pointer;
@@ -54,8 +54,10 @@
         .btn-print { background-color: #0f4c81; color: #ffffff; }
         .btn-add-row { background-color: #16a34a; color: #ffffff; }
         .btn-del-row { background-color: #dc2626; color: #ffffff; }
+        .btn-undo { background-color: #6b21a8; color: #ffffff; }
         .btn-add-col { background-color: #0284c7; color: #ffffff; }
         .btn-del-col { background-color: #ea580c; color: #ffffff; }
+        .btn-reset { background-color: #475569; color: #ffffff; }
 
         .sheet-container {
             width: 100%;
@@ -251,8 +253,10 @@
         <div class="btn-group">
             <button class="btn btn-add-row" onclick="addRow()">+ ಸಾಲು (Row)</button>
             <button class="btn btn-del-row" onclick="deleteRow()">- ಸಾಲು (Row)</button>
-            <button class="btn btn-add-col" onclick="addColumn()">+ ಕಾಲಂ (Column)</button>
-            <button class="btn btn-del-col" onclick="deleteColumn()">- ಕಾಲಂ (Column)</button>
+            <button class="btn btn-undo" id="undoBtn" onclick="undoDelete()" style="display: none;">↩ Undo (ವಾಪಸ್)</button>
+            <button class="btn btn-add-col" onclick="addColumn()">+ ಕಾಲಂ</button>
+            <button class="btn btn-del-col" onclick="deleteColumn()">- ಕಾಲಂ</button>
+            <button class="btn btn-reset" onclick="resetDefaultList()">🔄 Reset</button>
         </div>
         <button class="btn btn-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
     </div>
@@ -265,7 +269,7 @@
             
             <div class="meta-row">
                 <div class="meta-item">
-                    ತರಗತಿ: <input type="text" value="ತರಗತಿ..." style="width: 90px;">
+                    ತರಗತಿ: <input type="text" value="7ನೇ ತರಗತಿ" style="width: 90px;">
                 </div>
                 <div class="meta-item">
                     ವಿಷಯ: <input type="text" placeholder="ವಿಷಯ ಬರೆಯಿರಿ..." style="width: 140px;">
@@ -305,7 +309,7 @@
     </div>
 
     <script>
-        const studentNames = [
+        const initialStudents = [
             "A DORE", "ABHISHEK H", "ABHISHEKA K", "AKASH S", "BHAVANA T",
             "BINDHU S", "DHANUSH KUMAR GONEPPANAVAR", "DHRUVA N", "GAJENDRA S",
             "HARSHITA", "JOGINA SUDEEPA", "K SINDHU", "KARTHIKA H", "KUSHI P",
@@ -318,12 +322,20 @@
 
         let extraColsCount = 0;
         const tbody = document.getElementById("studentBody");
+        const undoBtn = document.getElementById("undoBtn");
+        
+        // ಡಿಲೀಟ್ ಆದ ಸಾಲುಗಳನ್ನು ಕಾಪಾಡಿಕೊಳ್ಳುವ ಸ್ಟ್ಯಾಕ್
+        const deletedRowsStack = [];
 
-        studentNames.forEach((name, index) => {
-            appendRow(index + 1, name);
-        });
+        function initList() {
+            tbody.innerHTML = "";
+            initialStudents.forEach((name, index) => {
+                appendRow(index + 1, name);
+            });
+        }
+        initList();
 
-        function appendRow(slNo, name = "") {
+        function appendRow(slNo, name = "", oralVal = "", writtenVal = "") {
             const tr = document.createElement("tr");
             
             let extraTds = "";
@@ -334,14 +346,25 @@
             tr.innerHTML = `
                 <td class="sl-no">${slNo}</td>
                 <td class="name-cell"><input type="text" value="${name}" placeholder="ಹೆಸರು ಬರೆಯಿರಿ..."></td>
-                <td><input type="number" min="0" max="10" class="num-input oral-input" oninput="calcMarks(this)"></td>
-                <td><input type="number" min="0" max="40" class="num-input written-input" oninput="calcMarks(this)"></td>
+                <td><input type="number" min="0" max="10" class="num-input oral-input" value="${oralVal}" oninput="calcMarks(this)"></td>
+                <td><input type="number" min="0" max="40" class="num-input written-input" value="${writtenVal}" oninput="calcMarks(this)"></td>
                 <td class="total-cell">0</td>
                 <td class="conv-cell">0</td>
                 <td class="grade-cell">-</td>
                 ${extraTds}
             `;
             tbody.appendChild(tr);
+
+            if (oralVal !== "" || writtenVal !== "") {
+                calcMarks(tr.querySelector('.oral-input'));
+            }
+        }
+
+        function updateSerialNumbers() {
+            Array.from(tbody.rows).forEach((row, idx) => {
+                const slCell = row.querySelector('.sl-no');
+                if (slCell) slCell.textContent = idx + 1;
+            });
         }
 
         function calcMarks(element) {
@@ -380,11 +403,52 @@
             appendRow(count, "");
         }
 
+        // ಸಾಲು ಡಿಲೀಟ್ ಮಾಡುವಾಗ ಮೆಮೊರಿಯಲ್ಲಿ ಇಟ್ಟುಕೊಳ್ಳುವುದು
         function deleteRow() {
             if (tbody.rows.length > 1) {
+                const lastRow = tbody.rows[tbody.rows.length - 1];
+                
+                // ಡೇಟಾ ಬ್ಯಾಕಪ್
+                const rowData = {
+                    name: lastRow.querySelector('.name-cell input').value,
+                    oral: lastRow.querySelector('.oral-input').value,
+                    written: lastRow.querySelector('.written-input').value
+                };
+                deletedRowsStack.push(rowData);
+
                 tbody.deleteRow(tbody.rows.length - 1);
+                updateSerialNumbers();
+
+                // Undo ಬಟನ್ ತೋರಿಸು
+                undoBtn.style.display = "inline-block";
+                undoBtn.textContent = `↩ Undo (${deletedRowsStack.length})`;
             } else {
                 alert("ಕನಿಷ್ಠ ಒಂದು ಸಾಲು ಇರಲೇಬೇಕು!");
+            }
+        }
+
+        // Undo ಒತ್ತಿದಾಗ ಮರಳಿ ಸಾಲುಗಳನ್ನು ಸೇರಿಸುವುದು
+        function undoDelete() {
+            if (deletedRowsStack.length > 0) {
+                const restored = deletedRowsStack.pop();
+                const nextSl = tbody.rows.length + 1;
+                appendRow(nextSl, restored.name, restored.oral, restored.written);
+                updateSerialNumbers();
+
+                if (deletedRowsStack.length === 0) {
+                    undoBtn.style.display = "none";
+                } else {
+                    undoBtn.textContent = `↩ Undo (${deletedRowsStack.length})`;
+                }
+            }
+        }
+
+        // ಪೂರ್ತಿ ಪಟ್ಟಿಯನ್ನು ಮೊದಲಿನಂತೆ ರೀಸೆಟ್ ಮಾಡಲು
+        function resetDefaultList() {
+            if (confirm("ಎಲ್ಲಾ 36 ವಿದ್ಯಾರ್ಥಿಗಳ ಮೂಲ ಪಟ್ಟಿಯನ್ನು ಮರಳಿ ಲೋಡ್ ಮಾಡಬೇಕೇ?")) {
+                initList();
+                deletedRowsStack.length = 0;
+                undoBtn.style.display = "none";
             }
         }
 
